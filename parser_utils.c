@@ -45,7 +45,7 @@ int ft_strncmp(char *a, char *b, size_t n)
 
 int is_digit(int c)
 {
-    return()
+    return(if(c >= '0' && c <= '9'))
 }
 
 double ft_atof(char *str)
