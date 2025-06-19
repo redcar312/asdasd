@@ -112,30 +112,68 @@ void set_type(t_token *token)
 		token->type = READ_I;
 }
 
+bool	is_closed(char *line, char q)
+{
+	size_t	i;
+
+	i = 0;	
+	while(line[i])
+	{
+		if (line[i] == q)
+			return (true);
+		i++;
+	}
+	return (false);
+}
 
 int	is_whitespace(char c)
 {
 	return((c == ' ' || c == 9));
 }
 
+
+size_t	handle_sq(char *line)
+{
+	size_t	i;
+
+	i = 0;
+	while (line[i] != 39 && line[i])
+		i++;
+	i++;
+	return (i);
+}
+
+size_t	handle_dq(char *line)
+{
+	size_t	i;
+
+	i = 0;
+	while (line[i] != 34 && line[i])
+		i++;
+	i++;
+	return (i);
+}
+
 ssize_t	count_token_amount(char *line)
 {
 	size_t	i;
 	ssize_t	count;
-	bool	is_quoted;
-
 
 	i = 0;
-	count = 0;
-	is_quoted = false;
+	i = 0;
 	while (line[i])
 	{
-		
-		if (!is_whitespace(line[i]) || is_quoted)
+		if (!is_whitespace(line[i]))
 		{
 			count++;
-			while (line[i] != '\0' && !is_whitespace(line[i]))
+			while (!is_whitespace(line[i]) && line[i])
+			{	
+				if (line[i] == 39)
+					i += handle_sq(&line[i + 1]);
+				else if (line[i] == 34)
+					i += handle_dq(&line[i + 1]);
 				i++;
+			}
 		}
 		else
 			i++;
@@ -143,24 +181,91 @@ ssize_t	count_token_amount(char *line)
 	return (count);
 }
 
-bool	is_valid(char *str)
+bool	check_sq(char *line)
+{
+	size_t	i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == 39)
+			return (true);
+		i++;
+	}
+	return (false);
+}
+
+bool	check_dq(char *line)
 {
 	size_t	i;
 	
 	i = 0;
+	while (line[i])
+	{
+		if (line[i] == 34)
+			return (true);
+		i++;	
+	}
+	return (false);
+}
+
+bool	validator(char *line)
+{
+	size_t	i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (!is_whitespace(line[i]))
+		{
+			while (!is_whitespace(line[i]) && line[i])
+			{
+				if (line[i] == 39)
+				{
+					if (!check_sq(&line[i]))
+						exit(1);
+					i += handle_sq(&line[i]);
+				}
+				if (line[i] == 34)
+				{
+					if (!check_dq(&line[i]))
+						exit(1);
+					i += handle_dq(&line[i]);
+				}
+			}
+			i++;
+		}
+	}
+
+}
+
+size_t	custom_len(char *line)
+{
+	size_t	i;
+	
+	i = 0;
+	while (!is_whitespace(line[i]) && line[i])
+	{
+    		if (line[i] == 39)
+    			i += handle_sq(&line[i + 1]);
+    		if (line[i] == 34)
+    			i += handle_dq(&line[i + 1]);
+    		i++;
+	}
+    return (i);
 }
 
 char *custom_dup(char *line)
 {
     size_t  i;
     char    *res;
+    size_t	l;
 
+    l = custom_len(line);
+    printf("%ld \n", l);
+    res = (char *)malloc((l + 1) * sizeof(char));
     i = 0;
-    while (!is_whitespace(line[i]) && line[i])
-        i++;
-    res = (char *)malloc((i + 1) * sizeof(char));
-    i = 0;
-    while(!is_whitespace(line[i]) && line[i])
+    while (i <= l)
     {
         res[i] = line[i];
         i++;
@@ -208,12 +313,19 @@ t_token *tokenize(char *line, t_token **stack)
     i = 0;
     while (line[i])
     {
+    
         if (!is_whitespace(line[i]))
         {
             new = make_token(&line[i]);
             add_token(stack, new);
             while (!is_whitespace(line[i]) && line[i])
+            {
+                if(line[i] == 39)
+                    i += handle_sq(&line[i + 1]);
+                if(line[i] == 34)
+                    i += handle_dq(&line[i + 1]);
                 i++;
+            }
         }
         else
             i++;
@@ -354,10 +466,7 @@ int main()
     t_com *c;
     t = NULL;
     c = NULL;
-    t = tokenize("echo e | asd e", &t);
-    size_t  i = count_args(&t);
-    init_coms(&t, &c);
-    
-    printf("%s", c->next->prev->args[2]);
+    t = tokenize("e'cho e' | asd e", &t);
+    printf("%s", t->next->str);
 }
 
